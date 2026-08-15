@@ -1,0 +1,10 @@
+venv/
+test_venv/
+__pycache__/
+*.pyc
+.idea/
+.DS_Store
+
+# Runtime-generated user data (recreated automatically on first run)
+user_permanent_database/*
+!user_permanent_database/.gitkeep
