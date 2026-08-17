@@ -4,6 +4,7 @@ import faiss
 import numpy as np
 from pypdf import PdfReader
 import os
+import hashlib
 
 # 📊 1. CUSTOMIZE BROWSER TAB AND LOGO
 st.set_page_config(
@@ -21,9 +22,35 @@ def load_model():
 
 model = load_model()
 
-# 📂 3. AUTO-DATABASE STORAGE FOLDER
-# This permanently holds the files behind the scenes so they never vanish
-DB_FOLDER = "user_permanent_database"
+# 5. Web UI Header Elements
+st.title("🔍 'Where Did I See That?'")
+st.subheader("Your AI-Powered Local Brain Dump")
+
+# 🔐 PRIVATE MEMORY KEY (keeps each person's documents separate and private)
+st.markdown("---")
+st.caption(
+    "Enter your name and a private passphrase. This pair unlocks your own private memory — "
+    "use the exact same name + passphrase every time to get back to your documents. "
+    "There is no password recovery, so don't forget it."
+)
+col1, col2 = st.columns(2)
+with col1:
+    user_name = st.text_input("Your name", key="user_name")
+with col2:
+    user_passphrase = st.text_input("Private passphrase", key="user_passphrase", type="password")
+
+if not user_name.strip() or not user_passphrase.strip():
+    st.info("💡 Enter your name and a private passphrase above to unlock your personal AI memory.")
+    st.stop()
+
+# Derive a private, non-guessable folder id from name + passphrase.
+# Same name+passphrase always maps back to the same folder; a wrong
+# passphrase for a known name maps to a different (empty) folder.
+_user_key = f"{user_name.strip().lower()}||{user_passphrase.strip()}"
+_user_id = hashlib.sha256(_user_key.encode("utf-8")).hexdigest()[:24]
+
+# 📂 3. AUTO-DATABASE STORAGE FOLDER (private, per-user)
+DB_FOLDER = os.path.join("user_permanent_database", _user_id)
 if not os.path.exists(DB_FOLDER):
     os.makedirs(DB_FOLDER)
 
@@ -51,10 +78,6 @@ def load_stored_database():
                 pass
     return docs, names
 
-
-# 5. Web UI Header Elements
-st.title("🔍 'Where Did I See That?'")
-st.subheader("Your AI-Powered Local Brain Dump")
 
 # 📥 6. EASY DRAG & DROP INTERFACE
 uploaded_files = st.file_uploader(
